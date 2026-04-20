@@ -1,0 +1,102 @@
+import pandas as pd
+
+data = [
+    {
+        "id": 1,
+        "name": "Valid_Unrelated_OR",
+        "pdx": "A41.9",
+        "proc": ["0SR90JZ"],
+        "expected": 0,
+        "risk_label": "Low"
+    },
+    {
+        "id": 2,
+        "name": "Extreme_Mismatch",
+        "pdx": "N39.0",
+        "proc": ["021009W"],
+        "expected": 1,
+        "risk_label": "High"
+    },
+    {
+        "id": 3,
+        "name": "MCC_Stacking",
+        "pdx": "L03.9",
+        "proc": ["0WQF0ZZ"],
+        "expected": 1,
+        "risk_label": "Med-High"
+    },
+    {
+        "id": 4,
+        "name": "Unbundling_OR",
+        "pdx": "K35.80",
+        "proc": ["0DTJ0ZZ", "0DTJ4ZZ"],
+        "expected": 1,
+        "risk_label": "High"
+    },
+    {
+        "id": 5,
+        "name": "Financial_Misalignment",
+        "pdx": "J18.9",
+        "proc": ["0BH17EZ"],
+        "expected": 1,
+        "risk_label": "Med-High"
+    },
+    {
+        "id": 6,
+        "name": "Adversarial_High_Sim",
+        "pdx": "I50.9",
+        "proc": ["5A1955Z"],
+        "expected": 1,
+        "risk_label": "Medium"
+    },
+    {
+        "id": 7,
+        "name": "Noise_Injection",
+        "pdx": "A41.9|M54.5",
+        "proc": ["0SR90JZ"],
+        "expected": 0,
+        "risk_label": "Low-Med"
+    },
+    {
+        "id": 8,
+        "name": "Complex_Valid",
+        "pdx": "A41.9|J96.00",
+        "proc": ["5A1955Z"],
+        "expected": 0,
+        "risk_label": "Low"
+    },
+    {
+        "id": 9,
+        "name": "Low_LOS_High_Intensity",
+        "pdx": "K52.9",
+        "proc": ["0D160ZA"],
+        "expected": 1,
+        "risk_label": "High"
+    },
+    {
+        "id": 10,
+        "name": "Weak_Link_Justified",
+        "pdx": "E11.9",
+        "proc": ["0Y6J0Z0"],
+        "expected": 0,
+        "risk_label": "Low"
+    },
+    {
+        "id": 11,
+        "name": "Cross_Domain_Error",
+        "pdx": "F32.9",
+        "proc": ["0DTF0ZZ"],
+        "expected": 1,
+        "risk_label": "High"
+    },
+    {
+        "id": 12,
+        "name": "Moderate_Gray_Zone",
+        "pdx": "J44.9",
+        "proc": ["0BJ08ZZ"],
+        "expected": -1,  # borderline
+        "risk_label": "Medium"
+    }
+]
+
+df = pd.DataFrame(data)
