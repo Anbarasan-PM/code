@@ -1,0 +1,91 @@
+import pandas as pd
+
+# DRG 981 validation dataset
+df = pd.DataFrame([
+    {
+        "pdx": "A41.9",
+        "proc": "0SR90JZ",
+        "expected": "Not Flagged",
+        "risk_label": "Low",
+        "description": "Valid_Unrelated_OR | Sepsis with unrelated hip replacement; clinically acceptable under DRG 981 if LOS/course reasonable"
+    },
+    {
+        "pdx": "N39.0",
+        "proc": "021009W",
+        "expected": "Flagged",
+        "risk_label": "High",
+        "description": "Extreme_Mismatch | UTI with CABG; severe diagnosis-procedure mismatch"
+    },
+    {
+        "pdx": "L03.9",
+        "proc": "0WQF0ZZ",
+        "expected": "Flagged",
+        "risk_label": "Med-High",
+        "description": "MCC_Stacking | Cellulitis with abdominal wall repair plus unjustified MCC stacking"
+    },
+    {
+        "pdx": "K35.80",
+        "proc": "0DTJ0ZZ + 0DTJ4ZZ",
+        "expected": "Flagged",
+        "risk_label": "High",
+        "description": "Unbundling_OR | Duplicate appendectomy procedures indicating unbundling"
+    },
+    {
+        "pdx": "J18.9",
+        "proc": "0BH17EZ",
+        "expected": "Flagged",
+        "risk_label": "Med-High",
+        "description": "Financial_Misalignment | Pneumonia with intubation but short LOS"
+    },
+    {
+        "pdx": "I50.9",
+        "proc": "5A1955Z",
+        "expected": "Flagged",
+        "risk_label": "Medium",
+        "description": "Adversarial_High_Sim | Heart failure with ventilation but inconsistent LOS"
+    },
+    {
+        "pdx": "A41.9 + M54.5",
+        "proc": "0SR90JZ",
+        "expected": "Not Flagged",
+        "risk_label": "Low-Med",
+        "description": "Noise_Injection | Valid case with irrelevant secondary diagnosis"
+    },
+    {
+        "pdx": "A41.9 + J96.00",
+        "proc": "5A1955Z",
+        "expected": "Not Flagged",
+        "risk_label": "Low",
+        "description": "Complex_Valid | Sepsis with respiratory failure requiring ventilation"
+    },
+    {
+        "pdx": "K52.9",
+        "proc": "0D160ZA",
+        "expected": "Flagged",
+        "risk_label": "High",
+        "description": "Low_LOS_High_Intensity | Gastroenteritis with complex bypass surgery and short LOS"
+    },
+    {
+        "pdx": "E11.9",
+        "proc": "0Y6J0Z0",
+        "expected": "Not Flagged",
+        "risk_label": "Low",
+        "description": "Weak_Link_Justified | Diabetes leading to lower limb amputation"
+    },
+    {
+        "pdx": "F32.9",
+        "proc": "0DTF0ZZ",
+        "expected": "Flagged",
+        "risk_label": "High",
+        "description": "Cross_Domain_Error | Depression with colon resection; no plausible linkage"
+    },
+    {
+        "pdx": "J44.9",
+        "proc": "0BJ08ZZ",
+        "expected": "Borderline",
+        "risk_label": "Medium",
+        "description": "Moderate_Gray_Zone | COPD with bronchoscopy; plausible but threshold-sensitive"
+    }
+])
+
+print(df)
