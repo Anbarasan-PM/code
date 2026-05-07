@@ -100,3 +100,20 @@ data = [
 ]
 
 df = pd.DataFrame(data)
+
+
+
+pairs = [
+    ("I63412", "X2H63V9"),
+    ("E119", "S52501A"),
+    ("A4101", "A4102"),   # hypertension
+]
+
+for c1, c2 in pairs:
+
+    v1 = final_df.loc[final_df["code"] == c1, embedding_cols].values[0]
+    v2 = final_df.loc[final_df["code"] == c2, embedding_cols].values[0]
+
+    sim = cosine_similarity(v1.reshape(1,-1), v2.reshape(1,-1))[0][0]
+
+    print(c1, "vs", c2, "=>", sim)
