@@ -703,3 +703,283 @@ In fact, for your Green → Amber analysis, I'd focus on three outputs:
 
 These directly answer **which variables and combinations are causing the shift from Green to Amber** without relying on an invented composite score.
 
+
+
+
+
+
+top_amber_signature
+
+
+Yes, but with an important distinction.
+
+Your result:
+
+| feature_pair              | combo                     | green_pct | amber_pct | lift |
+| ------------------------- | ------------------------- | --------- | --------- | ---- |
+| shap_provider + shap_city | Neutral | Strong Negative | 0.006     | 0.054     | 8.73 |
+
+means:
+
+> Records where **Provider has Neutral impact** and **City has Strong Negative impact** are about **8.7 times more common in Amber than in Green**.
+
+This is a **strong Amber signature**.
+
+However, it does **not automatically mean causation**.
+
+More accurately:
+
+> This combination is strongly associated with Amber records and is a candidate explanation for why records are moving from Green to Amber.
+
+---
+
+# Step 1: Extract the actual records
+
+Suppose:
+
+```python
+provider_col = "shap_provider_impact"
+city_col = "shap_city_impact"
+```
+
+Filter:
+
+```python
+amber_signature_records = df_ga[
+    (df_ga["cod_band"] == "Amber")
+    &
+    (df_ga[provider_col] == "Neutral")
+    &
+    (df_ga[city_col] == "Strong Negative")
+]
+```
+
+Check count:
+
+```python
+len(amber_signature_records)
+```
+
+---
+
+# Step 2: See the actual feature values
+
+Include:
+
+```python
+cols_to_view = [
+    "cod_band",
+    "provider",
+    "city",
+    "shap_provider",
+    "shap_city",
+    "shap_provider_impact",
+    "shap_city_impact"
+]
+
+amber_signature_records[cols_to_view].head(20)
+```
+
+Now you can inspect the actual rows.
+
+---
+
+# Step 3: Compare against Green
+
+This is where the insight comes.
+
+```python
+green_same_pattern = df_ga[
+    (df_ga["cod_band"] == "Green")
+    &
+    (df_ga[provider_col] == "Neutral")
+    &
+    (df_ga[city_col] == "Strong Negative")
+]
+```
+
+Compare:
+
+```python
+print("Amber:", len(amber_signature_records))
+print("Green:", len(green_same_pattern))
+```
+
+If:
+
+```text
+Amber = 280
+Green = 30
+```
+
+then the pattern is genuinely concentrated in Amber.
+
+---
+
+# Step 4: Find the actual cities/providers driving it
+
+For the Amber records:
+
+### City
+
+```python
+amber_signature_records["city"] \
+    .value_counts(dropna=False) \
+    .head(20)
+```
+
+### Provider
+
+```python
+amber_signature_records["provider"] \
+    .value_counts(dropna=False) \
+    .head(20)
+```
+
+Now you'll discover things like:
+
+| City      | Count |
+| --------- | ----- |
+| Chennai   | 80    |
+| Bangalore | 65    |
+| Mumbai    | 40    |
+
+Then you know which city values are contributing to the negative SHAP.
+
+---
+
+# Step 5: Compare SHAP values within those records
+
+```python
+amber_signature_records[
+    [
+        "shap_provider",
+        "shap_city"
+    ]
+].describe()
+```
+
+Example:
+
+| Variable | Mean SHAP |
+| -------- | --------- |
+| Provider | 0.01      |
+| City     | -0.85     |
+
+Interpretation:
+
+> Provider contributes almost nothing.
+>
+> City is strongly pulling predictions toward Amber.
+
+In that case City is the real driver.
+
+---
+
+# Step 6: Find ALL Amber records explained by top signatures
+
+Suppose you take the top 10 signatures:
+
+```python
+top_amber_signatures.head(10)
+```
+
+Create a list:
+
+```python
+signatures = [
+    ("shap_provider_impact","Neutral",
+     "shap_city_impact","Strong Negative"),
+
+    ("shap_region_impact","Strong Negative",
+     "shap_city_impact","Strong Negative")
+]
+```
+
+Collect records:
+
+```python
+selected_records = []
+
+for col1,val1,col2,val2 in signatures:
+
+    temp = df_ga[
+        (df_ga["cod_band"]=="Amber")
+        &
+        (df_ga[col1]==val1)
+        &
+        (df_ga[col2]==val2)
+    ]
+
+    selected_records.append(temp)
+
+amber_explained = pd.concat(selected_records)
+
+amber_explained = amber_explained.drop_duplicates()
+```
+
+Now:
+
+```python
+print(
+    len(amber_explained) /
+    len(df_ga[df_ga["cod_band"]=="Amber"])
+)
+```
+
+gives:
+
+```text
+0.62
+```
+
+Meaning:
+
+> The top 10 signatures explain 62% of all Amber records.
+
+This is often a very powerful business finding.
+
+---
+
+# What I would do next (strongly recommended)
+
+Instead of stopping at:
+
+```text
+Provider = Neutral
+City = Strong Negative
+```
+
+calculate:
+
+### Amber rate by category combination
+
+```python
+combo_summary = (
+    df_ga.groupby(
+        [
+            "shap_provider_impact",
+            "shap_city_impact"
+        ]
+    )["cod_band"]
+    .apply(lambda x: (x=="Amber").mean())
+    .reset_index()
+    .sort_values("cod_band",ascending=False)
+)
+```
+
+Output:
+
+| Provider          | City            | Amber Rate |
+| ----------------- | --------------- | ---------- |
+| Neutral           | Strong Negative | 92%        |
+| Moderate Negative | Strong Negative | 89%        |
+| Strong Negative   | Strong Negative | 87%        |
+
+This is often more useful than lift because it tells you:
+
+> "If City becomes Strong Negative while Provider remains Neutral, 92% of such records are Amber."
+
+That's very close to identifying the conditions under which records transition from Green to Amber.
+
+
