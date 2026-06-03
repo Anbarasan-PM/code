@@ -509,3 +509,197 @@ Interpretation:
 > The simultaneous negative impact of Utilization and Delay is a major signature of Green → Amber transition.
 
 This notebook gives you both **individual drivers** and **interaction patterns**, which is usually what stakeholders want when asking *"what caused records to move from Green to Amber?"* rather than just looking at SHAP plots.
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------#################
+
+
+The **driver score** in the notebook is **not a standard SHAP metric**. It's a custom ranking score that combines three things:
+
+1. **How much the SHAP contribution changed** (Green → Amber)
+2. **How much the impact category changed** (Positive → Negative)
+3. **How statistically significant the difference is**
+
+The code was:
+
+```python
+driver_df['driver_score'] = (
+    abs(driver_df['shap_shift'])
+    *
+    abs(driver_df['category_shift'])
+    *
+    (-np.log10(driver_df['pvalue'] + 1e-10))
+)
+```
+
+---
+
+## What each component means
+
+### 1. SHAP Shift
+
+```python
+shap_shift = amber_mean_shap - green_mean_shap
+```
+
+Example:
+
+| Feature     | Green Mean SHAP | Amber Mean SHAP | Shift |
+| ----------- | --------------- | --------------- | ----- |
+| Utilization | 0.40            | -0.30           | -0.70 |
+
+Interpretation:
+
+> The feature's contribution became much more negative in Amber.
+
+A large negative shift is a strong signal that the feature is pushing records away from Green.
+
+---
+
+### 2. Category Shift
+
+Suppose we mapped:
+
+| Category          | Score |
+| ----------------- | ----- |
+| Strong Negative   | -2    |
+| Moderate Negative | -1    |
+| Neutral           | 0     |
+| Moderate Positive | 1     |
+| Strong Positive   | 2     |
+
+Then:
+
+| Feature     | Green Avg Score | Amber Avg Score |
+| ----------- | --------------- | --------------- |
+| Utilization | 1.6             | -1.2            |
+
+```python
+category_shift = -1.2 - 1.6 = -2.8
+```
+
+Interpretation:
+
+> The feature moved from generally positive impact in Green to generally negative impact in Amber.
+
+---
+
+### 3. Statistical Significance
+
+Using:
+
+```python
+mannwhitneyu()
+```
+
+You get a p-value.
+
+| P-value | Meaning               |
+| ------- | --------------------- |
+| 0.50    | No real difference    |
+| 0.05    | Significant           |
+| 0.001   | Very significant      |
+| <0.0001 | Extremely significant |
+
+The transformation:
+
+```python
+-np.log10(pvalue)
+```
+
+gives:
+
+| P-value | Weight |
+| ------- | ------ |
+| 0.1     | 1      |
+| 0.01    | 2      |
+| 0.001   | 3      |
+| 0.0001  | 4      |
+
+Smaller p-values receive larger weights.
+
+---
+
+## Example
+
+Feature A:
+
+```python
+shap_shift = -0.60
+category_shift = -2.5
+pvalue = 0.0001
+```
+
+Driver score:
+
+```python
+0.60 × 2.5 × 4
+= 6.0
+```
+
+Feature B:
+
+```python
+shap_shift = -0.20
+category_shift = -0.5
+pvalue = 0.01
+```
+
+Driver score:
+
+```python
+0.20 × 0.5 × 2
+= 0.2
+```
+
+Feature A ranks much higher.
+
+---
+
+## But here's what I would recommend
+
+For explainability projects, I usually avoid creating a synthetic "driver score" because it can be hard to justify to stakeholders.
+
+Instead, rank features by a table like:
+
+| Rank | Feature   | SHAP Shift | P-value | Amber Strong Negative % | Green Strong Negative % |
+| ---- | --------- | ---------- | ------- | ----------------------- | ----------------------- |
+| 1    | Feature A | -0.62      | <0.001  | 34%                     | 6%                      |
+| 2    | Feature B | -0.48      | <0.001  | 28%                     | 8%                      |
+
+This is easier to explain:
+
+> "Feature A became substantially more negative in Amber, and Strong Negative impacts occur 34% of the time in Amber versus only 6% in Green."
+
+For business audiences, this is usually more convincing than a custom driver score.
+
+In fact, for your Green → Amber analysis, I'd focus on three outputs:
+
+### A. Feature Deterioration Table
+
+| Feature | Green Mean SHAP | Amber Mean SHAP | SHAP Shift |
+| ------- | --------------- | --------------- | ---------- |
+
+### B. Impact Category Shift
+
+| Feature | Green Strong Neg % | Amber Strong Neg % | Increase |
+| ------- | ------------------ | ------------------ | -------- |
+
+### C. Amber Signatures
+
+| Combination | Amber % | Green % | Lift |
+| ----------- | ------- | ------- | ---- |
+
+These directly answer **which variables and combinations are causing the shift from Green to Amber** without relying on an invented composite score.
+
